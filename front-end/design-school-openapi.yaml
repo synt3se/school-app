@@ -1,0 +1,829 @@
+openapi: 3.0.3
+info:
+  title: Design School API
+  version: 2.0.0
+  description: |
+    REST API для веб-приложения школы дизайна (упрощённая версия).
+    
+    ## Особенности
+    - У родителя **один ребёнок**
+    - Регистрация только для родителей (учителей создаёт админ)
+    - JWT токен, logout — на стороне клиента
+    
+    ## Авторизация
+    Получите токен через `POST /api/auth/login` и добавьте заголовок:
+    ```
+    Authorization: Bearer <token>
+    ```
+
+servers:
+  - url: http://localhost:8080
+    description: Development
+  - url: https://api.designschool.com
+    description: Production
+
+tags:
+  - name: Auth
+    description: Авторизация
+  - name: User
+    description: Профиль пользователя
+  - name: Child
+    description: Данные ребёнка
+  - name: Lessons
+    description: Расписание и занятия
+  - name: Payments
+    description: Платежи
+  - name: Notifications
+    description: Уведомления
+
+security:
+  - bearerAuth: []
+
+paths:
+  # ==================== AUTH ====================
+  /api/auth/login:
+    post:
+      tags: [Auth]
+      summary: Вход
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  minLength: 6
+            example:
+              email: parent@example.com
+              password: password123
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/auth/register:
+    post:
+      tags: [Auth]
+      summary: Регистрация родителя
+      description: Регистрация нового родителя с ребёнком
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+            example:
+              fullName: Иванов Иван
+              email: ivan@example.com
+              phone: '+79001234567'
+              password: password123
+              child:
+                fullName: Иванов Петя
+                birthDate: '2015-05-15'
+              branchId: 550e8400-e29b-41d4-a716-446655440000
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  userId:
+                    type: string
+                    format: uuid
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  # ==================== USER ====================
+  /api/user/me:
+    get:
+      tags: [User]
+      summary: Текущий пользователь
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+
+    put:
+      tags: [User]
+      summary: Обновить профиль
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fullName:
+                  type: string
+                phone:
+                  type: string
+            example:
+              fullName: Иванов Иван Петрович
+              phone: '+79009876543'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+
+  # ==================== CHILD ====================
+  /api/child:
+    get:
+      tags: [Child]
+      summary: Данные ребёнка
+      description: Получить данные ребёнка текущего родителя
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChildResponse'
+
+    put:
+      tags: [Child]
+      summary: Обновить данные ребёнка
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fullName:
+                  type: string
+                birthDate:
+                  type: string
+                  format: date
+            example:
+              fullName: Иванов Пётр
+              birthDate: '2015-06-20'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChildResponse'
+
+  /api/child/journal:
+    get:
+      tags: [Child]
+      summary: Журнал оценок
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/JournalEntry'
+
+  # ==================== LESSONS ====================
+  /api/lessons/upcoming:
+    get:
+      tags: [Lessons]
+      summary: Ближайшие занятия
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 3
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Lesson'
+
+  /api/lessons/week:
+    get:
+      tags: [Lessons]
+      summary: Расписание на неделю
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Lesson'
+
+  /api/lessons/available:
+    get:
+      tags: [Lessons]
+      summary: Доступные занятия для переноса
+      description: |
+        Занятия того же курса в филиале, на которые можно перенести пропущенное.
+        Возвращает только занятия, куда ребёнок ещё не записан.
+      parameters:
+        - name: courseId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Lesson'
+
+  /api/lessons/{id}/cancel:
+    post:
+      tags: [Lessons]
+      summary: Отменить занятие
+      description: Отметить, что ребёнок не придёт на занятие
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Lesson'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/lessons/reschedule:
+    post:
+      tags: [Lessons]
+      summary: Перенести занятие
+      description: |
+        Перенести пропущенное занятие на другое из расписания.
+        Курс и филиал должны совпадать.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [fromLessonId, toLessonId]
+              properties:
+                fromLessonId:
+                  type: string
+                  format: uuid
+                  description: ID пропускаемого занятия
+                toLessonId:
+                  type: string
+                  format: uuid
+                  description: ID занятия, на которое переносим
+            example:
+              fromLessonId: 550e8400-e29b-41d4-a716-446655440001
+              toLessonId: 550e8400-e29b-41d4-a716-446655440002
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Lesson'
+        '400':
+          description: Курс или филиал не совпадают
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/lessons/restore:
+    post:
+      tags: [Lessons]
+      summary: Восстановить занятие
+      description: |
+        Восстановить ранее пропущенное занятие, записавшись на другое.
+        Курс и филиал должны совпадать.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [missedLessonId, targetLessonId]
+              properties:
+                missedLessonId:
+                  type: string
+                  format: uuid
+                  description: ID пропущенного занятия
+                targetLessonId:
+                  type: string
+                  format: uuid
+                  description: ID занятия для посещения
+            example:
+              missedLessonId: 550e8400-e29b-41d4-a716-446655440001
+              targetLessonId: 550e8400-e29b-41d4-a716-446655440003
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Lesson'
+        '400':
+          description: Курс или филиал не совпадают
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ==================== TEACHER ENDPOINTS ====================
+  /api/lessons/today:
+    get:
+      tags: [Lessons]
+      summary: Занятия на сегодня (для учителя)
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LessonWithAttendance'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/lessons/{id}/attendance:
+    post:
+      tags: [Lessons]
+      summary: Отметить посещаемость (для учителя)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [childId, present]
+              properties:
+                childId:
+                  type: string
+                  format: uuid
+                present:
+                  type: boolean
+            example:
+              childId: 550e8400-e29b-41d4-a716-446655440000
+              present: true
+      responses:
+        '200':
+          description: OK
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  # ==================== PAYMENTS ====================
+  /api/payments:
+    get:
+      tags: [Payments]
+      summary: История платежей
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentPage'
+
+    post:
+      tags: [Payments]
+      summary: Создать платёж
+      description: |
+        Создать платёж за курс. Сумма рассчитывается автоматически 
+        на основе тарифов филиала.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [courseId, period]
+              properties:
+                courseId:
+                  type: string
+                  format: uuid
+                period:
+                  type: string
+                  enum: [LESSON, MONTH, YEAR]
+            example:
+              courseId: 550e8400-e29b-41d4-a716-446655440000
+              period: MONTH
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+
+  /api/payments/prices:
+    get:
+      tags: [Payments]
+      summary: Тарифы филиала
+      description: Получить цены за занятие/месяц/год для филиала ребёнка
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  lesson:
+                    type: number
+                    example: 1500
+                  month:
+                    type: number
+                    example: 12000
+                  year:
+                    type: number
+                    example: 120000
+
+  # ==================== NOTIFICATIONS ====================
+  /api/notifications:
+    get:
+      tags: [Notifications]
+      summary: Список уведомлений
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationPage'
+
+  /api/notifications/unread:
+    get:
+      tags: [Notifications]
+      summary: Количество непрочитанных
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+                example:
+                  count: 5
+
+  /api/notifications/{id}/read:
+    post:
+      tags: [Notifications]
+      summary: Отметить прочитанным
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+
+  /api/notifications/read-all:
+    post:
+      tags: [Notifications]
+      summary: Отметить все прочитанными
+      responses:
+        '200':
+          description: OK
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  responses:
+    Unauthorized:
+      description: Не авторизован
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            message: Неверный email или пароль
+
+    Forbidden:
+      description: Доступ запрещён
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            message: Недостаточно прав
+
+    BadRequest:
+      description: Ошибка валидации
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  schemas:
+    # === Auth ===
+    RegisterRequest:
+      type: object
+      required: [fullName, email, phone, password, child, branchId]
+      properties:
+        fullName:
+          type: string
+          minLength: 2
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        password:
+          type: string
+          minLength: 6
+        child:
+          type: object
+          required: [fullName, birthDate]
+          properties:
+            fullName:
+              type: string
+            birthDate:
+              type: string
+              format: date
+        branchId:
+          type: string
+          format: uuid
+
+    AuthResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        user:
+          $ref: '#/components/schemas/UserResponse'
+
+    # === User ===
+    UserResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        fullName:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        role:
+          type: string
+          enum: [PARENT, TEACHER, ADMIN]
+        child:
+          $ref: '#/components/schemas/ChildResponse'
+        branch:
+          $ref: '#/components/schemas/Branch'
+
+    # === Child ===
+    ChildResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        fullName:
+          type: string
+        birthDate:
+          type: string
+          format: date
+        age:
+          type: integer
+        courses:
+          type: array
+          items:
+            $ref: '#/components/schemas/Course'
+
+    JournalEntry:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+        project:
+          type: string
+        attendanceScore:
+          type: integer
+        evaluationScore:
+          type: integer
+        totalScore:
+          type: integer
+        comment:
+          type: string
+
+    # === Lesson ===
+    Lesson:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+        course:
+          $ref: '#/components/schemas/Course'
+        teacher:
+          type: string
+          description: ФИО преподавателя
+        status:
+          type: string
+          enum: [SCHEDULED, CANCELLED, COMPLETED, RESCHEDULED]
+        branch:
+          $ref: '#/components/schemas/Branch'
+
+    LessonWithAttendance:
+      allOf:
+        - $ref: '#/components/schemas/Lesson'
+        - type: object
+          properties:
+            students:
+              type: array
+              items:
+                type: object
+                properties:
+                  childId:
+                    type: string
+                    format: uuid
+                  childName:
+                    type: string
+                  present:
+                    type: boolean
+                    nullable: true
+
+    # === Course ===
+    Course:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+
+    # === Branch ===
+    Branch:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        address:
+          type: string
+
+    # === Payment ===
+    Payment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        course:
+          type: string
+        period:
+          type: string
+          enum: [LESSON, MONTH, YEAR]
+        amount:
+          type: number
+        status:
+          type: string
+          enum: [PENDING, PAID, FAILED]
+        createdAt:
+          type: string
+          format: date-time
+
+    PaymentPage:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/Payment'
+        totalElements:
+          type: integer
+        totalPages:
+          type: integer
+        number:
+          type: integer
+
+    # === Notification ===
+    Notification:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        message:
+          type: string
+        type:
+          type: string
+          enum: [INFO, SCHEDULE, PAYMENT, REMINDER]
+        read:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    NotificationPage:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/Notification'
+        totalElements:
+          type: integer
+        totalPages:
+          type: integer
+        number:
+          type: integer
+
+    # === Error ===
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+        field:
+          type: string
+          description: Поле с ошибкой (для валидации)
