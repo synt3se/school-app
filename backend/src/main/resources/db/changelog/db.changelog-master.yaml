@@ -1,3 +1,7 @@
 databaseChangeLog:
   - include:
-      file: db/changelog/001-create-branches.yaml
+      file: db/changelog/001-schema.yaml
+  - include:
+      file: db/changelog/002-test-data.yaml
+  - include:
+      file: db/changelog/003-grades-notifications.yaml

@@ -1,0 +1,142 @@
+databaseChangeLog:
+  - changeSet:
+      id: add-grades-and-notifications
+      author: developer
+      changes:
+        # Таблица оценок
+        - createTable:
+            tableName: grades
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: child_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_grades_child
+                    references: children(id)
+              - column:
+                  name: lesson_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_grades_lesson
+                    references: lessons(id)
+              - column:
+                  name: teacher_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_grades_teacher
+                    references: users(id)
+              - column:
+                  name: grade_value
+                  type: int
+                  constraints:
+                    nullable: false
+              - column:
+                  name: comment
+                  type: varchar(500)
+              - column:
+                  name: created_at
+                  type: timestamp
+                  defaultValueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: updated_at
+                  type: timestamp
+                  defaultValueComputed: CURRENT_TIMESTAMP
+
+        - createIndex:
+            tableName: grades
+            indexName: idx_grades_child
+            columns:
+              - column:
+                  name: child_id
+
+        - createIndex:
+            tableName: grades
+            indexName: idx_grades_lesson
+            columns:
+              - column:
+                  name: lesson_id
+
+        - addUniqueConstraint:
+            tableName: grades
+            columnNames: lesson_id, child_id
+            constraintName: uk_grades_lesson_child
+
+        # Таблица уведомлений
+        - createTable:
+            tableName: notifications
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: user_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_notifications_user
+                    references: users(id)
+              - column:
+                  name: type
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: title
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: message
+                  type: varchar(1000)
+              - column:
+                  name: read
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: lesson_id
+                  type: uuid
+                  constraints:
+                    foreignKeyName: fk_notifications_lesson
+                    references: lessons(id)
+              - column:
+                  name: grade_id
+                  type: uuid
+                  constraints:
+                    foreignKeyName: fk_notifications_grade
+                    references: grades(id)
+              - column:
+                  name: created_at
+                  type: timestamp
+                  defaultValueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: updated_at
+                  type: timestamp
+                  defaultValueComputed: CURRENT_TIMESTAMP
+
+        - createIndex:
+            tableName: notifications
+            indexName: idx_notifications_user
+            columns:
+              - column:
+                  name: user_id
+
+        - createIndex:
+            tableName: notifications
+            indexName: idx_notifications_user_read
+            columns:
+              - column:
+                  name: user_id
+              - column:
+                  name: read

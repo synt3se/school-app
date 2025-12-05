@@ -1,20 +1,19 @@
 package com.github.synt3se.controller;
 
-import com.github.synt3se.dto.request.AttendaceRequest;
-import com.github.synt3se.dto.response.AttendanceResponse;
+import com.github.synt3se.dto.request.AttendanceRequest;
+import com.github.synt3se.dto.request.RescheduleRequest;
+import com.github.synt3se.dto.request.RestoreRequest;
 import com.github.synt3se.dto.response.LessonResponse;
+import com.github.synt3se.dto.response.LessonWithAttendanceResponse;
+import com.github.synt3se.entity.User;
 import com.github.synt3se.service.LessonService;
-import com.github.synt3se.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.nio.file.attribute.UserPrincipal;
-import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -24,60 +23,65 @@ import java.util.UUID;
 public class LessonController {
 
     private final LessonService lessonService;
-    private final UserService userService;
 
     @GetMapping("/upcoming")
-    public ResponseEntity<List<LessonResponse>> getUpcomingLessons(
-            @AuthenticationPrincipal UserPrincipal principal,
+    @PreAuthorize("hasRole('PARENT')")
+    public ResponseEntity<List<LessonResponse>> getUpcoming(
+            @AuthenticationPrincipal User user,
             @RequestParam(defaultValue = "3") int limit) {
-        return ResponseEntity.ok(new ArrayList<>());
+        return ResponseEntity.ok(lessonService.getUpcoming(user.getId(), limit));
     }
 
     @GetMapping("/week")
-    public ResponseEntity<List<LessonResponse>> getWeekLessons(@AuthenticationPrincipal UserPrincipal principal) {
-        return ResponseEntity.ok(new ArrayList<>());
+    @PreAuthorize("hasRole('PARENT')")
+    public ResponseEntity<List<LessonResponse>> getWeekSchedule(@AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(lessonService.getWeekSchedule(user.getId()));
+    }
+
+    @GetMapping("/available")
+    @PreAuthorize("hasRole('PARENT')")
+    public ResponseEntity<List<LessonResponse>> getAvailable(
+            @AuthenticationPrincipal User user,
+            @RequestParam UUID courseId) {
+        return ResponseEntity.ok(lessonService.getAvailableForReschedule(user.getId(), courseId));
+    }
+
+    @PostMapping("/{id}/cancel")
+    @PreAuthorize("hasRole('PARENT')")
+    public ResponseEntity<LessonResponse> cancel(
+            @AuthenticationPrincipal User user,
+            @PathVariable UUID id) {
+        return ResponseEntity.ok(lessonService.cancel(user.getId(), id));
+    }
+
+    @PostMapping("/reschedule")
+    @PreAuthorize("hasRole('PARENT')")
+    public ResponseEntity<LessonResponse> reschedule(
+            @AuthenticationPrincipal User user,
+            @Valid @RequestBody RescheduleRequest request) {
+        return ResponseEntity.ok(lessonService.reschedule(user.getId(), request));
+    }
+
+    @PostMapping("/restore")
+    @PreAuthorize("hasRole('PARENT')")
+    public ResponseEntity<LessonResponse> restore(
+            @AuthenticationPrincipal User user,
+            @Valid @RequestBody RestoreRequest request) {
+        return ResponseEntity.ok(lessonService.restore(user.getId(), request));
     }
 
     @GetMapping("/today")
-    public ResponseEntity<List<LessonResponse>> getTodayLessons(@AuthenticationPrincipal UserPrincipal principal) {
-        return ResponseEntity.ok(new ArrayList<>());
+    @PreAuthorize("hasRole('TEACHER')")
+    public ResponseEntity<List<LessonWithAttendanceResponse>> getToday(@AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(lessonService.getTodayForTeacher(user.getId()));
     }
 
-    @GetMapping("/branch/{branchid}")
-    public ResponseEntity<List<LessonResponse>> getBranchLessons(
+    @PostMapping("/{id}/attendance")
+    @PreAuthorize("hasRole('TEACHER')")
+    public ResponseEntity<Void> markAttendance(
             @PathVariable UUID id,
-            @RequestParam @DateTimeFormat (iso = DateTimeFormat.ISO.DATE) LocalDate date) {
-        return ResponseEntity.ok(new ArrayList<>());
+            @Valid @RequestBody AttendanceRequest request) {
+        lessonService.markAttendance(id, request);
+        return ResponseEntity.ok().build();
     }
-
-    @PatchMapping("/{id}/attendance")
-    public ResponseEntity<AttendanceResponse> markAttendance(
-            @PathVariable UUID id,
-            @Valid @RequestBody AttendaceRequest request,
-            @AuthenticationPrincipal UserPrincipal principal) {
-        return ResponseEntity.ok(new AttendanceResponse());
-    }
-
-    @PatchMapping("/{id}/reschedule")
-    public ResponseEntity<LessonResponse> rescheduleLesson(
-            @PathVariable UUID id,
-            @Valid @RequestBody AttendaceRequest request,
-            @AuthenticationPrincipal UserPrincipal principal) {
-        return ResponseEntity.ok(new LessonResponse());
-    }
-
-    @PatchMapping("/{id}/cancel")
-    public ResponseEntity<LessonResponse> cancelLesson(
-            @PathVariable UUID id,
-            @AuthenticationPrincipal UserPrincipal principal) {
-        return ResponseEntity.ok(new LessonResponse());
-    }
-
-    @PatchMapping("/{id}/restore")
-    public ResponseEntity<LessonResponse> restoreLesson(
-            @PathVariable UUID id,
-            @AuthenticationPrincipal UserPrincipal principal) {
-        return ResponseEntity.ok(new LessonResponse());
-    }
-
 }

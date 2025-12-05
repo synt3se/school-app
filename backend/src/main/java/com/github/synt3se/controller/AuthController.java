@@ -3,6 +3,7 @@ package com.github.synt3se.controller;
 import com.github.synt3se.dto.request.LoginRequest;
 import com.github.synt3se.dto.request.RegisterRequest;
 import com.github.synt3se.dto.response.AuthResponse;
+import com.github.synt3se.service.AuthService;
 import com.github.synt3se.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -23,17 +24,18 @@ import java.util.UUID;
 public class AuthController {
 
     private final UserService userService;
-    // JwtTokenProvider
-    // AuthManager
+    private final AuthService authService;
 
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
-        return ResponseEntity.ok(new AuthResponse());
+        return ResponseEntity.ok(authService.login(request));
     }
 
     @PostMapping("/register")
     public ResponseEntity<Map<String, UUID>> register(@Valid @RequestBody RegisterRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("userId", UUID.randomUUID()));
+        UUID userId = authService.register(request);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(Map.of("userId", userId));
     }
 
 }

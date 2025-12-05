@@ -1,0 +1,373 @@
+databaseChangeLog:
+  - changeSet:
+      id: 1
+      author: developer
+      changes:
+        # Филиалы
+        - createTable:
+            tableName: branches
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: name
+                  type: varchar(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: address
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: phone
+                  type: varchar(20)
+              - column:
+                  name: price_per_lesson
+                  type: decimal(10,2)
+              - column:
+                  name: price_per_month
+                  type: decimal(10,2)
+              - column:
+                  name: price_per_year
+                  type: decimal(10,2)
+              - column:
+                  name: active
+                  type: boolean
+                  defaultValueBoolean: true
+              - column:
+                  name: created_at
+                  type: timestamp
+                  defaultValueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: updated_at
+                  type: timestamp
+                  defaultValueComputed: CURRENT_TIMESTAMP
+
+        # Пользователи
+        - createTable:
+            tableName: users
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: full_name
+                  type: varchar(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: email
+                  type: varchar(100)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: phone
+                  type: varchar(20)
+              - column:
+                  name: password
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: role
+                  type: varchar(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: branch_id
+                  type: uuid
+                  constraints:
+                    foreignKeyName: fk_users_branch
+                    references: branches(id)
+              - column:
+                  name: active
+                  type: boolean
+                  defaultValueBoolean: true
+              - column:
+                  name: created_at
+                  type: timestamp
+                  defaultValueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: updated_at
+                  type: timestamp
+                  defaultValueComputed: CURRENT_TIMESTAMP
+
+        # Курсы
+        - createTable:
+            tableName: courses
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: name
+                  type: varchar(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: varchar(500)
+              - column:
+                  name: branch_id
+                  type: uuid
+                  constraints:
+                    foreignKeyName: fk_courses_branch
+                    references: branches(id)
+              - column:
+                  name: active
+                  type: boolean
+                  defaultValueBoolean: true
+              - column:
+                  name: created_at
+                  type: timestamp
+                  defaultValueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: updated_at
+                  type: timestamp
+                  defaultValueComputed: CURRENT_TIMESTAMP
+
+        # Дети
+        - createTable:
+            tableName: children
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: full_name
+                  type: varchar(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: birth_date
+                  type: date
+              - column:
+                  name: parent_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    unique: true
+                    foreignKeyName: fk_children_parent
+                    references: users(id)
+              - column:
+                  name: branch_id
+                  type: uuid
+                  constraints:
+                    foreignKeyName: fk_children_branch
+                    references: branches(id)
+              - column:
+                  name: active
+                  type: boolean
+                  defaultValueBoolean: true
+              - column:
+                  name: created_at
+                  type: timestamp
+                  defaultValueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: updated_at
+                  type: timestamp
+                  defaultValueComputed: CURRENT_TIMESTAMP
+
+        # Связь ребёнок-курс
+        - createTable:
+            tableName: child_courses
+            columns:
+              - column:
+                  name: child_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_cc_child
+                    references: children(id)
+              - column:
+                  name: course_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_cc_course
+                    references: courses(id)
+        - addPrimaryKey:
+            tableName: child_courses
+            columnNames: child_id, course_id
+
+        # Занятия
+        - createTable:
+            tableName: lessons
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: start_time
+                  type: timestamp
+                  constraints:
+                    nullable: false
+              - column:
+                  name: end_time
+                  type: timestamp
+                  constraints:
+                    nullable: false
+              - column:
+                  name: course_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_lessons_course
+                    references: courses(id)
+              - column:
+                  name: branch_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_lessons_branch
+                    references: branches(id)
+              - column:
+                  name: teacher_id
+                  type: uuid
+                  constraints:
+                    foreignKeyName: fk_lessons_teacher
+                    references: users(id)
+              - column:
+                  name: status
+                  type: varchar(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: topic
+                  type: varchar(255)
+              - column:
+                  name: created_at
+                  type: timestamp
+                  defaultValueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: updated_at
+                  type: timestamp
+                  defaultValueComputed: CURRENT_TIMESTAMP
+
+        # Посещаемость
+        - createTable:
+            tableName: attendances
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: lesson_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_att_lesson
+                    references: lessons(id)
+              - column:
+                  name: child_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_att_child
+                    references: children(id)
+              - column:
+                  name: present
+                  type: boolean
+              - column:
+                  name: rescheduled_to_id
+                  type: uuid
+                  constraints:
+                    foreignKeyName: fk_att_rescheduled
+                    references: lessons(id)
+              - column:
+                  name: created_at
+                  type: timestamp
+                  defaultValueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: updated_at
+                  type: timestamp
+                  defaultValueComputed: CURRENT_TIMESTAMP
+        - addUniqueConstraint:
+            tableName: attendances
+            columnNames: lesson_id, child_id
+            constraintName: uk_attendance_lesson_child
+
+        # Платежи
+        - createTable:
+            tableName: payments
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: user_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_payments_user
+                    references: users(id)
+              - column:
+                  name: course_id
+                  type: uuid
+                  constraints:
+                    foreignKeyName: fk_payments_course
+                    references: courses(id)
+              - column:
+                  name: period
+                  type: varchar(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: amount
+                  type: decimal(10,2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: varchar(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamp
+                  defaultValueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: updated_at
+                  type: timestamp
+                  defaultValueComputed: CURRENT_TIMESTAMP
+
+  - changeSet:
+      id: 2
+      author: developer
+      changes:
+        # Индексы для производительности
+        - createIndex:
+            tableName: lessons
+            indexName: idx_lessons_start_time
+            columns:
+              - column:
+                  name: start_time
+        - createIndex:
+            tableName: lessons
+            indexName: idx_lessons_course
+            columns:
+              - column:
+                  name: course_id
+        - createIndex:
+            tableName: attendances
+            indexName: idx_att_child
+            columns:
+              - column:
+                  name: child_id
