@@ -6,6 +6,7 @@ import com.github.synt3se.dto.request.RestoreRequest;
 import com.github.synt3se.dto.response.*;
 import com.github.synt3se.entity.*;
 import com.github.synt3se.exception.BadRequestException;
+import com.github.synt3se.exception.ConflictException;
 import com.github.synt3se.exception.NotFoundException;
 import com.github.synt3se.repository.*;
 import lombok.RequiredArgsConstructor;
@@ -70,7 +71,7 @@ public class LessonService {
                 .orElseThrow(() -> new BadRequestException("Ребёнок не записан на это занятие"));
 
         if (attendance.getPresent() != null) {
-            throw new BadRequestException("Занятие уже отмечено");
+            throw ConflictException.alreadyMarked();
         }
 
         attendance.setPresent(false);
@@ -92,7 +93,7 @@ public class LessonService {
                 .orElseThrow(() -> new BadRequestException("Ребёнок не записан на исходное занятие"));
 
         if (attendanceRepository.findByLessonIdAndChildId(request.getToLessonId(), child.getId()).isPresent()) {
-            throw new BadRequestException("Ребёнок уже записан на целевое занятие");
+            throw ConflictException.alreadyEnrolled();
         }
 
         fromAttendance.setPresent(false);
@@ -121,11 +122,11 @@ public class LessonService {
                 .orElseThrow(() -> new BadRequestException("Запись о занятии не найдена"));
 
         if (missedAttendance.getPresent() != null && missedAttendance.getPresent()) {
-            throw new BadRequestException("Занятие не было пропущено");
+            throw new BadRequestException("Занятие не было пропущено — нельзя восстановить");
         }
 
         if (attendanceRepository.findByLessonIdAndChildId(request.getTargetLessonId(), child.getId()).isPresent()) {
-            throw new BadRequestException("Ребёнок уже записан на это занятие");
+            throw ConflictException.alreadyEnrolled();
         }
 
         missedAttendance.setRescheduledTo(targetLesson);
@@ -176,10 +177,10 @@ public class LessonService {
 
     private void validateSameCourseAndBranch(Lesson from, Lesson to) {
         if (!from.getCourse().getId().equals(to.getCourse().getId())) {
-            throw new BadRequestException("Курсы должны совпадать");
+            throw new BadRequestException("Нельзя перенести занятие на другой курс");
         }
         if (!from.getBranch().getId().equals(to.getBranch().getId())) {
-            throw new BadRequestException("Филиалы должны совпадать");
+            throw new BadRequestException("Нельзя перенести занятие в другой филиал");
         }
     }
 

@@ -5,6 +5,7 @@ import com.github.synt3se.dto.request.RegisterRequest;
 import com.github.synt3se.dto.response.*;
 import com.github.synt3se.entity.*;
 import com.github.synt3se.exception.BadRequestException;
+import com.github.synt3se.exception.ConflictException;
 import com.github.synt3se.exception.NotFoundException;
 import com.github.synt3se.repository.*;
 import com.github.synt3se.security.JwtTokenProvider;
@@ -44,11 +45,11 @@ public class AuthService {
     @Transactional
     public UUID register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new BadRequestException("Пользователь с таким email уже существует");
+            throw ConflictException.alreadyExists("Пользователь с email " + request.getEmail());
         }
 
         Branch branch = branchRepository.findById(request.getBranchId())
-                .orElseThrow(() -> new NotFoundException("Филиал не найден"));
+                .orElseThrow(() -> new NotFoundException("Филиал с ID " + request.getBranchId() + " не найден"));
 
         User user = User.builder()
                 .fullName(request.getFullName())

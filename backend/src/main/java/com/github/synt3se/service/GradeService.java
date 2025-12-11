@@ -4,6 +4,8 @@ import com.github.synt3se.dto.request.GradeRequest;
 import com.github.synt3se.dto.response.GradeResponse;
 import com.github.synt3se.entity.*;
 import com.github.synt3se.exception.BadRequestException;
+import com.github.synt3se.exception.ConflictException;
+import com.github.synt3se.exception.ForbiddenException;
 import com.github.synt3se.exception.NotFoundException;
 import com.github.synt3se.repository.*;
 import lombok.RequiredArgsConstructor;
@@ -53,14 +55,14 @@ public class GradeService {
                 .orElseThrow(() -> new NotFoundException("Занятие не найдено"));
 
         if (!lesson.getTeacher().getId().equals(teacherId)) {
-            throw new BadRequestException("Вы не ведёте это занятие");
+            throw ForbiddenException.notYourLesson();
         }
 
         Child child = childRepository.findById(request.getChildId())
                 .orElseThrow(() -> new NotFoundException("Ребёнок не найден"));
 
         if (gradeRepository.existsByLessonIdAndChildId(lessonId, request.getChildId())) {
-            throw new BadRequestException("Оценка уже выставлена");
+            throw ConflictException.alreadyGraded();
         }
 
         Grade grade = Grade.builder()
