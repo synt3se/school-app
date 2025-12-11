@@ -1,0 +1,1282 @@
+openapi: 3.0.3
+info:
+  title: Design School API
+  description: |
+    API для школы дизайна. Управление расписанием, оценками, платежами и уведомлениями.
+    
+    ## Роли пользователей
+    - **PARENT** — родитель ученика
+    - **TEACHER** — преподаватель
+    
+    ## Аутентификация
+    Используется JWT Bearer token. Получите токен через `/api/auth/login` и передавайте в заголовке:
+    ```
+    Authorization: Bearer <token>
+    ```
+    
+    ## Коды ошибок
+    
+    | Код | Тип | Когда возникает |
+    |-----|-----|-----------------|
+    | 400 | Bad Request | Неверный формат данных, ошибка валидации, неверный UUID |
+    | 401 | Unauthorized | Отсутствует или невалидный JWT токен |
+    | 403 | Forbidden | Нет прав доступа (не та роль или чужой ресурс) |
+    | 404 | Not Found | Ресурс не найден (занятие, ребёнок, пользователь) |
+    | 405 | Method Not Allowed | HTTP метод не поддерживается |
+    | 409 | Conflict | Конфликт данных (дубликат, уже существует) |
+    | 500 | Internal Server Error | Внутренняя ошибка сервера |
+
+  version: 2.0.0
+  contact:
+    name: Design School Support
+    email: support@designschool.com
+
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+
+tags:
+  - name: Auth
+    description: Аутентификация и регистрация
+  - name: User
+    description: Профиль пользователя
+  - name: Child
+    description: Управление данными ребёнка (только PARENT)
+  - name: Lessons
+    description: Расписание и управление занятиями
+  - name: Grades
+    description: Журнал оценок
+  - name: Payments
+    description: Платежи и тарифы
+  - name: Notifications
+    description: Уведомления
+
+security:
+  - BearerAuth: []
+
+paths:
+  # === AUTH ===
+  /api/auth/login:
+    post:
+      tags: [Auth]
+      summary: Вход в систему
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            example:
+              email: parent@example.com
+              password: password
+      responses:
+        '200':
+          description: Успешный вход
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: |
+            **BadRequestException** — Неверный email или пароль
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                timestamp: "2025-12-05T14:30:00"
+                status: 400
+                error: "Bad Request"
+                message: "Неверный email или пароль"
+                path: "/api/auth/login"
+
+  /api/auth/register:
+    post:
+      tags: [Auth]
+      summary: Регистрация родителя с ребёнком
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '200':
+          description: Регистрация успешна
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+        '400':
+          description: |
+            **MethodArgumentNotValidException** — Ошибка валидации полей
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                timestamp: "2025-12-05T14:30:00"
+                status: 400
+                error: "Validation Error"
+                message: "Ошибка валидации данных"
+                path: "/api/auth/register"
+                details:
+                  email: "должно быть в формате email"
+                  password: "размер должен быть от 6 до 100"
+        '404':
+          description: |
+            **NotFoundException** — Филиал не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                timestamp: "2025-12-05T14:30:00"
+                status: 404
+                error: "Not Found"
+                message: "Филиал с ID 123e4567-e89b-12d3-a456-426614174000 не найден"
+                path: "/api/auth/register"
+        '409':
+          description: |
+            **ConflictException** — Email уже занят
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                timestamp: "2025-12-05T14:30:00"
+                status: 409
+                error: "Conflict"
+                message: "Пользователь с email test@example.com уже существует"
+                path: "/api/auth/register"
+
+  # === USER ===
+  /api/user/me:
+    get:
+      tags: [User]
+      summary: Получить профиль текущего пользователя
+      responses:
+        '200':
+          description: Профиль пользователя
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: |
+            **NotFoundException** — Пользователь не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      tags: [User]
+      summary: Обновить профиль
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+      responses:
+        '200':
+          description: Профиль обновлён
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # === CHILD ===
+  /api/child:
+    get:
+      tags: [Child]
+      summary: Получить данные ребёнка
+      description: Только для роли PARENT
+      responses:
+        '200':
+          description: Данные ребёнка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChildResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: |
+            **AccessDeniedException** — Только для роли PARENT
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                timestamp: "2025-12-05T14:30:00"
+                status: 403
+                error: "Forbidden"
+                message: "Доступ запрещён. Недостаточно прав."
+                path: "/api/child"
+        '404':
+          description: |
+            **NotFoundException** — Ребёнок не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                timestamp: "2025-12-05T14:30:00"
+                status: 404
+                error: "Not Found"
+                message: "Ребёнок не найден. Добавьте ребёнка в профиль."
+                path: "/api/child"
+
+    put:
+      tags: [Child]
+      summary: Обновить данные ребёнка
+      description: Только для роли PARENT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateChildRequest'
+      responses:
+        '200':
+          description: Данные обновлены
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChildResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  # === LESSONS ===
+  /api/lessons/upcoming:
+    get:
+      tags: [Lessons]
+      summary: Ближайшие занятия ребёнка
+      description: Только для роли PARENT
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 5
+          description: Количество занятий
+      responses:
+        '200':
+          description: Список занятий
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LessonResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: |
+            **NotFoundException** — Ребёнок не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/lessons/week:
+    get:
+      tags: [Lessons]
+      summary: Расписание на неделю
+      description: Только для роли PARENT
+      responses:
+        '200':
+          description: Расписание на 7 дней
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LessonResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/lessons/available:
+    get:
+      tags: [Lessons]
+      summary: Доступные занятия для переноса
+      description: Только для роли PARENT
+      parameters:
+        - name: courseId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Список доступных занятий
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LessonResponse'
+        '400':
+          description: |
+            **MethodArgumentTypeMismatchException** — Неверный формат UUID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                timestamp: "2025-12-05T14:30:00"
+                status: 400
+                error: "Bad Request"
+                message: "Параметр 'courseId' имеет неверный формат. Ожидается: UUID"
+                path: "/api/lessons/available"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/lessons/{id}/cancel:
+    post:
+      tags: [Lessons]
+      summary: Отменить занятие
+      description: Только для роли PARENT
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Занятие отменено
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LessonResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: |
+            **NotFoundException** — Занятие не найдено или ребёнок не записан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                lessonNotFound:
+                  summary: Занятие не найдено
+                  value:
+                    timestamp: "2025-12-05T14:30:00"
+                    status: 404
+                    error: "Not Found"
+                    message: "Занятие с ID 123e4567-e89b-12d3-a456-426614174000 не найдено"
+                    path: "/api/lessons/123/cancel"
+                notEnrolled:
+                  summary: Ребёнок не записан
+                  value:
+                    timestamp: "2025-12-05T14:30:00"
+                    status: 404
+                    error: "Not Found"
+                    message: "Ребёнок не записан на это занятие"
+                    path: "/api/lessons/123/cancel"
+        '409':
+          description: |
+            **ConflictException** — Посещаемость уже отмечена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                timestamp: "2025-12-05T14:30:00"
+                status: 409
+                error: "Conflict"
+                message: "Посещаемость уже отмечена"
+                path: "/api/lessons/123/cancel"
+
+  /api/lessons/reschedule:
+    post:
+      tags: [Lessons]
+      summary: Перенести занятие
+      description: Только для роли PARENT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RescheduleRequest'
+      responses:
+        '200':
+          description: Занятие перенесено
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LessonResponse'
+        '400':
+          description: |
+            **BadRequestException** — Нельзя перенести на другой курс или филиал
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                differentCourse:
+                  summary: Разные курсы
+                  value:
+                    timestamp: "2025-12-05T14:30:00"
+                    status: 400
+                    error: "Bad Request"
+                    message: "Нельзя перенести занятие на другой курс"
+                    path: "/api/lessons/reschedule"
+                differentBranch:
+                  summary: Разные филиалы
+                  value:
+                    timestamp: "2025-12-05T14:30:00"
+                    status: 400
+                    error: "Bad Request"
+                    message: "Нельзя перенести занятие в другой филиал"
+                    path: "/api/lessons/reschedule"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: |
+            **NotFoundException** — Занятие не найдено или ребёнок не записан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: |
+            **ConflictException** — Уже записан на целевое занятие
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                timestamp: "2025-12-05T14:30:00"
+                status: 409
+                error: "Conflict"
+                message: "Ребёнок уже записан на это занятие"
+                path: "/api/lessons/reschedule"
+
+  /api/lessons/restore:
+    post:
+      tags: [Lessons]
+      summary: Восстановить пропущенное занятие
+      description: Только для роли PARENT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RestoreRequest'
+      responses:
+        '200':
+          description: Занятие восстановлено
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LessonResponse'
+        '400':
+          description: |
+            **BadRequestException** — Занятие не было пропущено
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                timestamp: "2025-12-05T14:30:00"
+                status: 400
+                error: "Bad Request"
+                message: "Занятие не было пропущено — нельзя восстановить"
+                path: "/api/lessons/restore"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: |
+            **NotFoundException** — Занятие или запись не найдена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: |
+            **ConflictException** — Уже записан на целевое занятие
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/lessons/today:
+    get:
+      tags: [Lessons]
+      summary: Занятия учителя на сегодня
+      description: Только для роли TEACHER
+      responses:
+        '200':
+          description: Список занятий с учениками
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LessonWithAttendanceResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: |
+            **AccessDeniedException** — Только для роли TEACHER
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/lessons/{id}/attendance:
+    post:
+      tags: [Lessons]
+      summary: Отметить посещаемость
+      description: Только для роли TEACHER
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AttendanceRequest'
+      responses:
+        '200':
+          description: Посещаемость отмечена
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: |
+            **NotFoundException** — Запись посещаемости не найдена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                timestamp: "2025-12-05T14:30:00"
+                status: 404
+                error: "Not Found"
+                message: "Запись посещаемости не найдена"
+                path: "/api/lessons/123/attendance"
+
+  # === GRADES ===
+  /api/grades:
+    get:
+      tags: [Grades]
+      summary: Все оценки ребёнка
+      description: Только для роли PARENT
+      responses:
+        '200':
+          description: Список оценок
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GradeResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: |
+            **NotFoundException** — Ребёнок не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/grades/course/{courseId}:
+    get:
+      tags: [Grades]
+      summary: Оценки ребёнка по курсу
+      description: Только для роли PARENT
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Список оценок по курсу
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GradeResponse'
+        '400':
+          description: |
+            **MethodArgumentTypeMismatchException** — Неверный формат UUID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/grades/lesson/{lessonId}:
+    get:
+      tags: [Grades]
+      summary: Оценки по занятию
+      description: Только для роли TEACHER
+      parameters:
+        - name: lessonId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Список оценок
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GradeResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    post:
+      tags: [Grades]
+      summary: Выставить оценку
+      description: Только для роли TEACHER
+      parameters:
+        - name: lessonId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GradeRequest'
+      responses:
+        '200':
+          description: Оценка выставлена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GradeResponse'
+        '400':
+          description: |
+            **MethodArgumentNotValidException** — Ошибка валидации (value должен быть 1-5)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: |
+            **ForbiddenException** — Вы не ведёте это занятие
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                timestamp: "2025-12-05T14:30:00"
+                status: 403
+                error: "Forbidden"
+                message: "Вы не ведёте это занятие"
+                path: "/api/grades/lesson/123"
+        '404':
+          description: |
+            **NotFoundException** — Занятие, учитель или ребёнок не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: |
+            **ConflictException** — Оценка уже выставлена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                timestamp: "2025-12-05T14:30:00"
+                status: 409
+                error: "Conflict"
+                message: "Оценка уже выставлена"
+                path: "/api/grades/lesson/123"
+
+  # === PAYMENTS ===
+  /api/payments:
+    get:
+      tags: [Payments]
+      summary: История платежей
+      description: Только для роли PARENT
+      responses:
+        '200':
+          description: Список платежей
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PaymentResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    post:
+      tags: [Payments]
+      summary: Создать платёж
+      description: Только для роли PARENT. Сумма рассчитывается автоматически по тарифам филиала.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentRequest'
+      responses:
+        '200':
+          description: Платёж создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentResponse'
+        '400':
+          description: |
+            **MethodArgumentNotValidException** — Ошибка валидации
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: |
+            **NotFoundException** — Курс не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/payments/prices:
+    get:
+      tags: [Payments]
+      summary: Тарифы филиала
+      description: Только для роли PARENT
+      responses:
+        '200':
+          description: Тарифы
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PricesResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  # === NOTIFICATIONS ===
+  /api/notifications:
+    get:
+      tags: [Notifications]
+      summary: Список уведомлений
+      parameters:
+        - name: unreadOnly
+          in: query
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Список уведомлений
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/NotificationResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/notifications/unread/count:
+    get:
+      tags: [Notifications]
+      summary: Количество непрочитанных
+      responses:
+        '200':
+          description: Счётчик
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnreadCountResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/notifications/{id}/read:
+    post:
+      tags: [Notifications]
+      summary: Отметить как прочитанное
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Отмечено
+        '400':
+          description: |
+            **MethodArgumentTypeMismatchException** — Неверный формат UUID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/notifications/read-all:
+    post:
+      tags: [Notifications]
+      summary: Отметить все как прочитанные
+      responses:
+        '200':
+          description: Все отмечены
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT токен, полученный при логине
+
+  responses:
+    Unauthorized:
+      description: |
+        **AuthenticationException** — Не авторизован (отсутствует или невалидный токен)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            timestamp: "2025-12-05T14:30:00"
+            status: 401
+            error: "Unauthorized"
+            message: "Ошибка аутентификации"
+            path: "/api/user/me"
+
+    Forbidden:
+      description: |
+        **AccessDeniedException** — Доступ запрещён (недостаточно прав или не та роль)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            timestamp: "2025-12-05T14:30:00"
+            status: 403
+            error: "Forbidden"
+            message: "Доступ запрещён. Недостаточно прав."
+            path: "/api/child"
+
+  schemas:
+    # === Requests ===
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          example: parent@example.com
+        password:
+          type: string
+          example: password
+
+    RegisterRequest:
+      type: object
+      required: [fullName, email, phone, password, branchId, child]
+      properties:
+        fullName:
+          type: string
+          example: Иванова Мария Петровна
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+          example: "+7 999 123-45-67"
+        password:
+          type: string
+          minLength: 6
+        branchId:
+          type: string
+          format: uuid
+        child:
+          $ref: '#/components/schemas/ChildData'
+
+    ChildData:
+      type: object
+      required: [fullName, birthDate]
+      properties:
+        fullName:
+          type: string
+          example: Иванов Петя
+        birthDate:
+          type: string
+          format: date
+          example: "2015-05-15"
+
+    UpdateUserRequest:
+      type: object
+      properties:
+        fullName:
+          type: string
+        phone:
+          type: string
+
+    UpdateChildRequest:
+      type: object
+      properties:
+        fullName:
+          type: string
+        birthDate:
+          type: string
+          format: date
+
+    RescheduleRequest:
+      type: object
+      required: [fromLessonId, toLessonId]
+      properties:
+        fromLessonId:
+          type: string
+          format: uuid
+        toLessonId:
+          type: string
+          format: uuid
+
+    RestoreRequest:
+      type: object
+      required: [missedLessonId, targetLessonId]
+      properties:
+        missedLessonId:
+          type: string
+          format: uuid
+        targetLessonId:
+          type: string
+          format: uuid
+
+    AttendanceRequest:
+      type: object
+      required: [childId, present]
+      properties:
+        childId:
+          type: string
+          format: uuid
+        present:
+          type: boolean
+
+    GradeRequest:
+      type: object
+      required: [childId, value]
+      properties:
+        childId:
+          type: string
+          format: uuid
+        value:
+          type: integer
+          minimum: 1
+          maximum: 5
+        comment:
+          type: string
+
+    PaymentRequest:
+      type: object
+      required: [courseId, period]
+      properties:
+        courseId:
+          type: string
+          format: uuid
+        period:
+          type: string
+          enum: [LESSON, MONTH, YEAR]
+
+    # === Responses ===
+    ErrorResponse:
+      type: object
+      description: |
+        Стандартный формат ошибки. Поле `details` присутствует только при ошибках валидации.
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+          description: Время возникновения ошибки
+        status:
+          type: integer
+          description: HTTP статус код
+        error:
+          type: string
+          description: Тип ошибки (Bad Request, Not Found, Forbidden и т.д.)
+        message:
+          type: string
+          description: Человекочитаемое сообщение об ошибке
+        path:
+          type: string
+          description: URL, на котором произошла ошибка
+        details:
+          type: object
+          additionalProperties:
+            type: string
+          description: Детали ошибок валидации (поле -> сообщение)
+
+    AuthResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        user:
+          $ref: '#/components/schemas/UserResponse'
+
+    UserResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        fullName:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        role:
+          type: string
+          enum: [PARENT, TEACHER]
+        branch:
+          $ref: '#/components/schemas/BranchResponse'
+        child:
+          $ref: '#/components/schemas/ChildResponse'
+
+    ChildResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        fullName:
+          type: string
+        birthDate:
+          type: string
+          format: date
+        age:
+          type: integer
+        courses:
+          type: array
+          items:
+            $ref: '#/components/schemas/CourseResponse'
+
+    BranchResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        address:
+          type: string
+
+    CourseResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+
+    LessonResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+        course:
+          $ref: '#/components/schemas/CourseResponse'
+        branch:
+          $ref: '#/components/schemas/BranchResponse'
+        teacher:
+          type: string
+        status:
+          type: string
+          enum: [SCHEDULED, CANCELLED, COMPLETED]
+        topic:
+          type: string
+
+    LessonWithAttendanceResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+        course:
+          $ref: '#/components/schemas/CourseResponse'
+        topic:
+          type: string
+        students:
+          type: array
+          items:
+            $ref: '#/components/schemas/StudentAttendanceResponse'
+
+    StudentAttendanceResponse:
+      type: object
+      properties:
+        childId:
+          type: string
+          format: uuid
+        childName:
+          type: string
+        present:
+          type: boolean
+          nullable: true
+
+    GradeResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        value:
+          type: integer
+        comment:
+          type: string
+        course:
+          type: string
+        lessonTopic:
+          type: string
+        lessonDate:
+          type: string
+          format: date-time
+        teacher:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    PaymentResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        amount:
+          type: number
+        period:
+          type: string
+          enum: [LESSON, MONTH, YEAR]
+        status:
+          type: string
+          enum: [PENDING, COMPLETED, FAILED]
+        course:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    PricesResponse:
+      type: object
+      properties:
+        pricePerLesson:
+          type: number
+        pricePerMonth:
+          type: number
+        pricePerYear:
+          type: number
+        branch:
+          type: string
+
+    NotificationResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [LESSON_SCHEDULED, LESSON_CANCELLED, LESSON_RESCHEDULED, LESSON_REMINDER, GRADE_ADDED, PAYMENT_REQUIRED, PAYMENT_RECEIVED]
+        title:
+          type: string
+        message:
+          type: string
+        read:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    UnreadCountResponse:
+      type: object
+      properties:
+        count:
+          type: integer
