@@ -17,6 +17,8 @@ public interface LessonRepository extends JpaRepository<Lesson, UUID> {
         WHERE a.child.id = :childId 
           AND l.startTime >= :from 
           AND l.startTime < :to
+          AND (a.present IS NULL OR a.present = true)
+          AND a.rescheduledTo IS NULL
         ORDER BY l.startTime
         """)
     List<Lesson> findByChildIdAndTimeRange(UUID childId, LocalDateTime from, LocalDateTime to);
@@ -27,6 +29,8 @@ public interface LessonRepository extends JpaRepository<Lesson, UUID> {
         WHERE a.child.id = :childId 
           AND l.startTime >= :from
           AND l.status = :status
+          AND a.present IS NULL
+          AND a.rescheduledTo IS NULL
         ORDER BY l.startTime
         LIMIT :limit
         """)
