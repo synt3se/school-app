@@ -1,0 +1,484 @@
+databaseChangeLog:
+  - changeSet:
+      id: test-data
+      author: developer
+      context: dev,test
+      changes:
+        # ========== ФИЛИАЛЫ ==========
+        - insert:
+            tableName: branches
+            columns:
+              - column: { name: id, value: 'b0000001-0000-0000-0000-000000000001' }
+              - column: { name: name, value: 'Арт-студия "Палитра" на Невском' }
+              - column: { name: address, value: 'г. Санкт-Петербург, Невский пр., д. 100' }
+              - column: { name: phone, value: '+7 (812) 111-22-33' }
+              - column: { name: price_per_lesson, valueNumeric: 1200 }
+              - column: { name: price_per_month, valueNumeric: 9600 }
+              - column: { name: price_per_year, valueNumeric: 96000 }
+
+        - insert:
+            tableName: branches
+            columns:
+              - column: { name: id, value: 'b0000002-0000-0000-0000-000000000002' }
+              - column: { name: name, value: 'Арт-студия "Палитра" на Московском' }
+              - column: { name: address, value: 'г. Санкт-Петербург, Московский пр., д. 50' }
+              - column: { name: phone, value: '+7 (812) 444-55-66' }
+              - column: { name: price_per_lesson, valueNumeric: 1000 }
+              - column: { name: price_per_month, valueNumeric: 8000 }
+              - column: { name: price_per_year, valueNumeric: 80000 }
+
+        # ========== КУРСЫ ==========
+        - insert:
+            tableName: courses
+            columns:
+              - column: { name: id, value: 'c0000001-0000-0000-0000-000000000001' }
+              - column: { name: name, value: 'Акварельная живопись' }
+              - column: { name: description, value: 'Техники работы с акварелью для детей 8-14 лет' }
+
+        - insert:
+            tableName: courses
+            columns:
+              - column: { name: id, value: 'c0000002-0000-0000-0000-000000000002' }
+              - column: { name: name, value: 'Графический дизайн' }
+              - column: { name: description, value: 'Основы компьютерной графики и дизайна' }
+
+        - insert:
+            tableName: courses
+            columns:
+              - column: { name: id, value: 'c0000003-0000-0000-0000-000000000003' }
+              - column: { name: name, value: 'Лепка из глины' }
+              - column: { name: description, value: 'Скульптура и керамика для начинающих' }
+
+        # ========== УЧИТЕЛЯ (пароль: password) ==========
+        # Филиал 1 - Невский
+        - insert:
+            tableName: users
+            columns:
+              - column: { name: id, value: '10000001-0000-0000-0000-000000000001' }
+              - column: { name: full_name, value: 'Соколова Анна Викторовна' }
+              - column: { name: email, value: 'sokolova@artpalitra.ru' }
+              - column: { name: phone, value: '+7 (911) 111-11-11' }
+              - column: { name: password, value: '$2a$10$dXJ3SW6G7P50lGmMkkmwe.20cQQubK3.HZWzG3YB1tlRy.fqvM/BG' }
+              - column: { name: role, value: 'TEACHER' }
+              - column: { name: branch_id, value: 'b0000001-0000-0000-0000-000000000001' }
+
+        - insert:
+            tableName: users
+            columns:
+              - column: { name: id, value: '10000002-0000-0000-0000-000000000002' }
+              - column: { name: full_name, value: 'Морозов Дмитрий Сергеевич' }
+              - column: { name: email, value: 'morozov@artpalitra.ru' }
+              - column: { name: phone, value: '+7 (911) 222-22-22' }
+              - column: { name: password, value: '$2a$10$dXJ3SW6G7P50lGmMkkmwe.20cQQubK3.HZWzG3YB1tlRy.fqvM/BG' }
+              - column: { name: role, value: 'TEACHER' }
+              - column: { name: branch_id, value: 'b0000001-0000-0000-0000-000000000001' }
+
+        # Филиал 2 - Московский
+        - insert:
+            tableName: users
+            columns:
+              - column: { name: id, value: '10000003-0000-0000-0000-000000000003' }
+              - column: { name: full_name, value: 'Белова Екатерина Андреевна' }
+              - column: { name: email, value: 'belova@artpalitra.ru' }
+              - column: { name: phone, value: '+7 (911) 333-33-33' }
+              - column: { name: password, value: '$2a$10$dXJ3SW6G7P50lGmMkkmwe.20cQQubK3.HZWzG3YB1tlRy.fqvM/BG' }
+              - column: { name: role, value: 'TEACHER' }
+              - column: { name: branch_id, value: 'b0000002-0000-0000-0000-000000000002' }
+
+        # ========== РОДИТЕЛИ (пароль: password) ==========
+        # Филиал 1
+        - insert:
+            tableName: users
+            columns:
+              - column: { name: id, value: '20000001-0000-0000-0000-000000000001' }
+              - column: { name: full_name, value: 'Кузнецова Ольга Петровна' }
+              - column: { name: email, value: 'kuznetsova@mail.ru' }
+              - column: { name: phone, value: '+7 (921) 100-10-01' }
+              - column: { name: password, value: '$2a$10$dXJ3SW6G7P50lGmMkkmwe.20cQQubK3.HZWzG3YB1tlRy.fqvM/BG' }
+              - column: { name: role, value: 'PARENT' }
+              - column: { name: branch_id, value: 'b0000001-0000-0000-0000-000000000001' }
+
+        - insert:
+            tableName: users
+            columns:
+              - column: { name: id, value: '20000002-0000-0000-0000-000000000002' }
+              - column: { name: full_name, value: 'Новиков Алексей Игоревич' }
+              - column: { name: email, value: 'novikov@gmail.com' }
+              - column: { name: phone, value: '+7 (921) 200-20-02' }
+              - column: { name: password, value: '$2a$10$dXJ3SW6G7P50lGmMkkmwe.20cQQubK3.HZWzG3YB1tlRy.fqvM/BG' }
+              - column: { name: role, value: 'PARENT' }
+              - column: { name: branch_id, value: 'b0000001-0000-0000-0000-000000000001' }
+
+        - insert:
+            tableName: users
+            columns:
+              - column: { name: id, value: '20000003-0000-0000-0000-000000000003' }
+              - column: { name: full_name, value: 'Смирнова Татьяна Владимировна' }
+              - column: { name: email, value: 'smirnova@yandex.ru' }
+              - column: { name: phone, value: '+7 (921) 300-30-03' }
+              - column: { name: password, value: '$2a$10$dXJ3SW6G7P50lGmMkkmwe.20cQQubK3.HZWzG3YB1tlRy.fqvM/BG' }
+              - column: { name: role, value: 'PARENT' }
+              - column: { name: branch_id, value: 'b0000001-0000-0000-0000-000000000001' }
+
+        # Филиал 2
+        - insert:
+            tableName: users
+            columns:
+              - column: { name: id, value: '20000004-0000-0000-0000-000000000004' }
+              - column: { name: full_name, value: 'Козлов Михаил Александрович' }
+              - column: { name: email, value: 'kozlov@inbox.ru' }
+              - column: { name: phone, value: '+7 (921) 400-40-04' }
+              - column: { name: password, value: '$2a$10$dXJ3SW6G7P50lGmMkkmwe.20cQQubK3.HZWzG3YB1tlRy.fqvM/BG' }
+              - column: { name: role, value: 'PARENT' }
+              - column: { name: branch_id, value: 'b0000002-0000-0000-0000-000000000002' }
+
+        - insert:
+            tableName: users
+            columns:
+              - column: { name: id, value: '20000005-0000-0000-0000-000000000005' }
+              - column: { name: full_name, value: 'Волкова Елена Сергеевна' }
+              - column: { name: email, value: 'volkova@mail.ru' }
+              - column: { name: phone, value: '+7 (921) 500-50-05' }
+              - column: { name: password, value: '$2a$10$dXJ3SW6G7P50lGmMkkmwe.20cQQubK3.HZWzG3YB1tlRy.fqvM/BG' }
+              - column: { name: role, value: 'PARENT' }
+              - column: { name: branch_id, value: 'b0000002-0000-0000-0000-000000000002' }
+
+        # ========== ДЕТИ ==========
+        # Филиал 1
+        - insert:
+            tableName: children
+            columns:
+              - column: { name: id, value: '30000001-0000-0000-0000-000000000001' }
+              - column: { name: full_name, value: 'Кузнецова Маша' }
+              - column: { name: birth_date, valueDate: '2014-03-15' }
+              - column: { name: parent_id, value: '20000001-0000-0000-0000-000000000001' }
+              - column: { name: branch_id, value: 'b0000001-0000-0000-0000-000000000001' }
+
+        - insert:
+            tableName: children
+            columns:
+              - column: { name: id, value: '30000002-0000-0000-0000-000000000002' }
+              - column: { name: full_name, value: 'Новиков Артём' }
+              - column: { name: birth_date, valueDate: '2015-07-22' }
+              - column: { name: parent_id, value: '20000002-0000-0000-0000-000000000002' }
+              - column: { name: branch_id, value: 'b0000001-0000-0000-0000-000000000001' }
+
+        - insert:
+            tableName: children
+            columns:
+              - column: { name: id, value: '30000003-0000-0000-0000-000000000003' }
+              - column: { name: full_name, value: 'Смирнова Алиса' }
+              - column: { name: birth_date, valueDate: '2013-11-08' }
+              - column: { name: parent_id, value: '20000003-0000-0000-0000-000000000003' }
+              - column: { name: branch_id, value: 'b0000001-0000-0000-0000-000000000001' }
+
+        # Филиал 2
+        - insert:
+            tableName: children
+            columns:
+              - column: { name: id, value: '30000004-0000-0000-0000-000000000004' }
+              - column: { name: full_name, value: 'Козлов Даниил' }
+              - column: { name: birth_date, valueDate: '2016-01-30' }
+              - column: { name: parent_id, value: '20000004-0000-0000-0000-000000000004' }
+              - column: { name: branch_id, value: 'b0000002-0000-0000-0000-000000000002' }
+
+        - insert:
+            tableName: children
+            columns:
+              - column: { name: id, value: '30000005-0000-0000-0000-000000000005' }
+              - column: { name: full_name, value: 'Волкова София' }
+              - column: { name: birth_date, valueDate: '2014-09-12' }
+              - column: { name: parent_id, value: '20000005-0000-0000-0000-000000000005' }
+              - column: { name: branch_id, value: 'b0000002-0000-0000-0000-000000000002' }
+
+        # ========== ЗАПИСИ ДЕТЕЙ НА КУРСЫ ==========
+        - insert:
+            tableName: child_courses
+            columns:
+              - column: { name: child_id, value: '30000001-0000-0000-0000-000000000001' }
+              - column: { name: course_id, value: 'c0000001-0000-0000-0000-000000000001' }
+
+        - insert:
+            tableName: child_courses
+            columns:
+              - column: { name: child_id, value: '30000002-0000-0000-0000-000000000002' }
+              - column: { name: course_id, value: 'c0000001-0000-0000-0000-000000000001' }
+        - insert:
+            tableName: child_courses
+            columns:
+              - column: { name: child_id, value: '30000002-0000-0000-0000-000000000002' }
+              - column: { name: course_id, value: 'c0000002-0000-0000-0000-000000000002' }
+
+        - insert:
+            tableName: child_courses
+            columns:
+              - column: { name: child_id, value: '30000003-0000-0000-0000-000000000003' }
+              - column: { name: course_id, value: 'c0000002-0000-0000-0000-000000000002' }
+
+        - insert:
+            tableName: child_courses
+            columns:
+              - column: { name: child_id, value: '30000004-0000-0000-0000-000000000004' }
+              - column: { name: course_id, value: 'c0000003-0000-0000-0000-000000000003' }
+
+        - insert:
+            tableName: child_courses
+            columns:
+              - column: { name: child_id, value: '30000005-0000-0000-0000-000000000005' }
+              - column: { name: course_id, value: 'c0000001-0000-0000-0000-000000000001' }
+        - insert:
+            tableName: child_courses
+            columns:
+              - column: { name: child_id, value: '30000005-0000-0000-0000-000000000005' }
+              - column: { name: course_id, value: 'c0000003-0000-0000-0000-000000000003' }
+
+        # ========== ЗАНЯТИЯ ==========
+        # Филиал 1 - Акварель (Соколова) - 3 занятия
+        - insert:
+            tableName: lessons
+            columns:
+              - column: { name: id, value: '40000001-0000-0000-0000-000000000001' }
+              - column: { name: start_time, valueDate: '2025-12-18T10:00:00' }
+              - column: { name: end_time, valueDate: '2025-12-18T11:30:00' }
+              - column: { name: course_id, value: 'c0000001-0000-0000-0000-000000000001' }
+              - column: { name: branch_id, value: 'b0000001-0000-0000-0000-000000000001' }
+              - column: { name: teacher_id, value: '10000001-0000-0000-0000-000000000001' }
+              - column: { name: status, value: 'SCHEDULED' }
+              - column: { name: topic, value: 'Техника "мокрым по мокрому"' }
+
+        - insert:
+            tableName: lessons
+            columns:
+              - column: { name: id, value: '40000002-0000-0000-0000-000000000002' }
+              - column: { name: start_time, valueDate: '2025-12-20T10:00:00' }
+              - column: { name: end_time, valueDate: '2025-12-20T11:30:00' }
+              - column: { name: course_id, value: 'c0000001-0000-0000-0000-000000000001' }
+              - column: { name: branch_id, value: 'b0000001-0000-0000-0000-000000000001' }
+              - column: { name: teacher_id, value: '10000001-0000-0000-0000-000000000001' }
+              - column: { name: status, value: 'SCHEDULED' }
+              - column: { name: topic, value: 'Пейзаж: небо и облака' }
+
+        - insert:
+            tableName: lessons
+            columns:
+              - column: { name: id, value: '40000003-0000-0000-0000-000000000003' }
+              - column: { name: start_time, valueDate: '2025-12-22T10:00:00' }
+              - column: { name: end_time, valueDate: '2025-12-22T11:30:00' }
+              - column: { name: course_id, value: 'c0000001-0000-0000-0000-000000000001' }
+              - column: { name: branch_id, value: 'b0000001-0000-0000-0000-000000000001' }
+              - column: { name: teacher_id, value: '10000001-0000-0000-0000-000000000001' }
+              - column: { name: status, value: 'SCHEDULED' }
+              - column: { name: topic, value: 'Цветочный натюрморт' }
+
+        # Филиал 1 - Графический дизайн (Морозов) - 2 занятия
+        - insert:
+            tableName: lessons
+            columns:
+              - column: { name: id, value: '40000004-0000-0000-0000-000000000004' }
+              - column: { name: start_time, valueDate: '2025-12-19T14:00:00' }
+              - column: { name: end_time, valueDate: '2025-12-19T15:30:00' }
+              - column: { name: course_id, value: 'c0000002-0000-0000-0000-000000000002' }
+              - column: { name: branch_id, value: 'b0000001-0000-0000-0000-000000000001' }
+              - column: { name: teacher_id, value: '10000002-0000-0000-0000-000000000002' }
+              - column: { name: status, value: 'SCHEDULED' }
+              - column: { name: topic, value: 'Основы работы в Figma' }
+
+        - insert:
+            tableName: lessons
+            columns:
+              - column: { name: id, value: '40000005-0000-0000-0000-000000000005' }
+              - column: { name: start_time, valueDate: '2025-12-21T14:00:00' }
+              - column: { name: end_time, valueDate: '2025-12-21T15:30:00' }
+              - column: { name: course_id, value: 'c0000002-0000-0000-0000-000000000002' }
+              - column: { name: branch_id, value: 'b0000001-0000-0000-0000-000000000001' }
+              - column: { name: teacher_id, value: '10000002-0000-0000-0000-000000000002' }
+              - column: { name: status, value: 'SCHEDULED' }
+              - column: { name: topic, value: 'Создание логотипа' }
+
+        # Филиал 2 - Лепка (Белова) - 2 занятия
+        - insert:
+            tableName: lessons
+            columns:
+              - column: { name: id, value: '40000006-0000-0000-0000-000000000006' }
+              - column: { name: start_time, valueDate: '2025-12-18T16:00:00' }
+              - column: { name: end_time, valueDate: '2025-12-18T17:30:00' }
+              - column: { name: course_id, value: 'c0000003-0000-0000-0000-000000000003' }
+              - column: { name: branch_id, value: 'b0000002-0000-0000-0000-000000000002' }
+              - column: { name: teacher_id, value: '10000003-0000-0000-0000-000000000003' }
+              - column: { name: status, value: 'SCHEDULED' }
+              - column: { name: topic, value: 'Лепка животных' }
+
+        - insert:
+            tableName: lessons
+            columns:
+              - column: { name: id, value: '40000007-0000-0000-0000-000000000007' }
+              - column: { name: start_time, valueDate: '2025-12-20T16:00:00' }
+              - column: { name: end_time, valueDate: '2025-12-20T17:30:00' }
+              - column: { name: course_id, value: 'c0000003-0000-0000-0000-000000000003' }
+              - column: { name: branch_id, value: 'b0000002-0000-0000-0000-000000000002' }
+              - column: { name: teacher_id, value: '10000003-0000-0000-0000-000000000003' }
+              - column: { name: status, value: 'SCHEDULED' }
+              - column: { name: topic, value: 'Декоративная тарелка' }
+
+        # ========== ЗАПИСИ ПОСЕЩАЕМОСТИ ==========
+        # Маша - 3 занятия акварели
+        - insert:
+            tableName: attendances
+            columns:
+              - column: { name: id, value: '50000001-0000-0000-0000-000000000001' }
+              - column: { name: lesson_id, value: '40000001-0000-0000-0000-000000000001' }
+              - column: { name: child_id, value: '30000001-0000-0000-0000-000000000001' }
+
+        - insert:
+            tableName: attendances
+            columns:
+              - column: { name: id, value: '50000002-0000-0000-0000-000000000002' }
+              - column: { name: lesson_id, value: '40000002-0000-0000-0000-000000000002' }
+              - column: { name: child_id, value: '30000001-0000-0000-0000-000000000001' }
+
+        - insert:
+            tableName: attendances
+            columns:
+              - column: { name: id, value: '50000003-0000-0000-0000-000000000003' }
+              - column: { name: lesson_id, value: '40000003-0000-0000-0000-000000000003' }
+              - column: { name: child_id, value: '30000001-0000-0000-0000-000000000001' }
+
+        # Артём - 2 акварели + 2 дизайна
+        - insert:
+            tableName: attendances
+            columns:
+              - column: { name: id, value: '50000004-0000-0000-0000-000000000004' }
+              - column: { name: lesson_id, value: '40000001-0000-0000-0000-000000000001' }
+              - column: { name: child_id, value: '30000002-0000-0000-0000-000000000002' }
+
+        - insert:
+            tableName: attendances
+            columns:
+              - column: { name: id, value: '50000005-0000-0000-0000-000000000005' }
+              - column: { name: lesson_id, value: '40000002-0000-0000-0000-000000000002' }
+              - column: { name: child_id, value: '30000002-0000-0000-0000-000000000002' }
+
+        - insert:
+            tableName: attendances
+            columns:
+              - column: { name: id, value: '50000006-0000-0000-0000-000000000006' }
+              - column: { name: lesson_id, value: '40000004-0000-0000-0000-000000000004' }
+              - column: { name: child_id, value: '30000002-0000-0000-0000-000000000002' }
+
+        - insert:
+            tableName: attendances
+            columns:
+              - column: { name: id, value: '50000007-0000-0000-0000-000000000007' }
+              - column: { name: lesson_id, value: '40000005-0000-0000-0000-000000000005' }
+              - column: { name: child_id, value: '30000002-0000-0000-0000-000000000002' }
+
+        # Алиса - 2 дизайна
+        - insert:
+            tableName: attendances
+            columns:
+              - column: { name: id, value: '50000008-0000-0000-0000-000000000008' }
+              - column: { name: lesson_id, value: '40000004-0000-0000-0000-000000000004' }
+              - column: { name: child_id, value: '30000003-0000-0000-0000-000000000003' }
+
+        - insert:
+            tableName: attendances
+            columns:
+              - column: { name: id, value: '50000009-0000-0000-0000-000000000009' }
+              - column: { name: lesson_id, value: '40000005-0000-0000-0000-000000000005' }
+              - column: { name: child_id, value: '30000003-0000-0000-0000-000000000003' }
+
+        # Даниил - 2 лепки
+        - insert:
+            tableName: attendances
+            columns:
+              - column: { name: id, value: '5000000a-0000-0000-0000-00000000000a' }
+              - column: { name: lesson_id, value: '40000006-0000-0000-0000-000000000006' }
+              - column: { name: child_id, value: '30000004-0000-0000-0000-000000000004' }
+
+        - insert:
+            tableName: attendances
+            columns:
+              - column: { name: id, value: '5000000b-0000-0000-0000-00000000000b' }
+              - column: { name: lesson_id, value: '40000007-0000-0000-0000-000000000007' }
+              - column: { name: child_id, value: '30000004-0000-0000-0000-000000000004' }
+
+        # София - 2 лепки
+        - insert:
+            tableName: attendances
+            columns:
+              - column: { name: id, value: '5000000c-0000-0000-0000-00000000000c' }
+              - column: { name: lesson_id, value: '40000006-0000-0000-0000-000000000006' }
+              - column: { name: child_id, value: '30000005-0000-0000-0000-000000000005' }
+
+        - insert:
+            tableName: attendances
+            columns:
+              - column: { name: id, value: '5000000d-0000-0000-0000-00000000000d' }
+              - column: { name: lesson_id, value: '40000007-0000-0000-0000-000000000007' }
+              - column: { name: child_id, value: '30000005-0000-0000-0000-000000000005' }
+
+        # ========== ОЦЕНКИ ==========
+        - insert:
+            tableName: grades
+            columns:
+              - column: { name: id, value: '60000001-0000-0000-0000-000000000001' }
+              - column: { name: child_id, value: '30000001-0000-0000-0000-000000000001' }
+              - column: { name: lesson_id, value: '40000001-0000-0000-0000-000000000001' }
+              - column: { name: teacher_id, value: '10000001-0000-0000-0000-000000000001' }
+              - column: { name: grade_value, valueNumeric: 5 }
+              - column: { name: comment, value: 'Отличная работа! Маша освоила технику.' }
+
+        - insert:
+            tableName: grades
+            columns:
+              - column: { name: id, value: '60000002-0000-0000-0000-000000000002' }
+              - column: { name: child_id, value: '30000002-0000-0000-0000-000000000002' }
+              - column: { name: lesson_id, value: '40000001-0000-0000-0000-000000000001' }
+              - column: { name: teacher_id, value: '10000001-0000-0000-0000-000000000001' }
+              - column: { name: grade_value, valueNumeric: 4 }
+              - column: { name: comment, value: 'Хорошо, но нужно поработать над переходами.' }
+
+        # ========== ПЛАТЕЖИ ==========
+        - insert:
+            tableName: payments
+            columns:
+              - column: { name: id, value: '70000001-0000-0000-0000-000000000001' }
+              - column: { name: user_id, value: '20000001-0000-0000-0000-000000000001' }
+              - column: { name: course_id, value: 'c0000001-0000-0000-0000-000000000001' }
+              - column: { name: amount, valueNumeric: 9600 }
+              - column: { name: period, value: 'MONTH' }
+              - column: { name: status, value: 'PAID' }
+
+        - insert:
+            tableName: payments
+            columns:
+              - column: { name: id, value: '70000002-0000-0000-0000-000000000002' }
+              - column: { name: user_id, value: '20000002-0000-0000-0000-000000000002' }
+              - column: { name: course_id, value: 'c0000001-0000-0000-0000-000000000001' }
+              - column: { name: amount, valueNumeric: 96000 }
+              - column: { name: period, value: 'YEAR' }
+              - column: { name: status, value: 'PAID' }
+
+        # ========== УВЕДОМЛЕНИЯ ==========
+        - insert:
+            tableName: notifications
+            columns:
+              - column: { name: id, value: '80000001-0000-0000-0000-000000000001' }
+              - column: { name: user_id, value: '20000001-0000-0000-0000-000000000001' }
+              - column: { name: type, value: 'GRADE_ADDED' }
+              - column: { name: title, value: 'Новая оценка' }
+              - column: { name: message, value: 'Маша получила оценку 5 по предмету "Акварельная живопись"' }
+              - column: { name: read, valueBoolean: false }
+              - column: { name: grade_id, value: '60000001-0000-0000-0000-000000000001' }
+              - column: { name: lesson_id, value: '40000001-0000-0000-0000-000000000001' }
+
+        - insert:
+            tableName: notifications
+            columns:
+              - column: { name: id, value: '80000002-0000-0000-0000-000000000002' }
+              - column: { name: user_id, value: '20000001-0000-0000-0000-000000000001' }
+              - column: { name: type, value: 'LESSON_REMINDER' }
+              - column: { name: title, value: 'Напоминание о занятии' }
+              - column: { name: message, value: 'Завтра в 10:00 занятие "Пейзаж: небо и облака"' }
+              - column: { name: read, valueBoolean: false }
+              - column: { name: lesson_id, value: '40000002-0000-0000-0000-000000000002' }
