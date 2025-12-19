@@ -52,4 +52,14 @@ public interface LessonRepository extends JpaRepository<Lesson, UUID> {
 
     List<Lesson> findByTeacherIdAndStartTimeBetweenOrderByStartTime(
             UUID teacherId, LocalDateTime from, LocalDateTime to);
+
+    @Query("""
+    SELECT l FROM Lesson l 
+    WHERE l.teacher.id = :teacherId 
+      AND l.startTime >= :from
+      AND l.status = :status
+    ORDER BY l.startTime
+    LIMIT :limit
+    """)
+    List<Lesson> findUpcomingByTeacherId(UUID teacherId, LocalDateTime from, LessonStatus status, int limit);
 }

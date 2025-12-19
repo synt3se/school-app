@@ -70,9 +70,17 @@ public class LessonController {
         return ResponseEntity.ok(lessonService.restore(user.getId(), request));
     }
 
-    @GetMapping("/today")
+    @GetMapping("/teacher/upcoming")
     @PreAuthorize("hasRole('TEACHER')")
-    public ResponseEntity<List<LessonWithAttendanceResponse>> getToday(@AuthenticationPrincipal User user) {
+    public ResponseEntity<List<LessonWithAttendanceResponse>> getUpcomingForTeacher(
+            @AuthenticationPrincipal User user,
+            @RequestParam(defaultValue = "10") int limit) {
+        return ResponseEntity.ok(lessonService.getUpcomingForTeacher(user.getId(), limit));
+    }
+
+    @GetMapping("/teacher/today")
+    @PreAuthorize("hasRole('TEACHER')")
+    public ResponseEntity<List<LessonWithAttendanceResponse>> getWeekForTeacher(@AuthenticationPrincipal User user) {
         return ResponseEntity.ok(lessonService.getTodayForTeacher(user.getId()));
     }
 

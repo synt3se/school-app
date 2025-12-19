@@ -156,6 +156,20 @@ public class LessonService {
         }).collect(Collectors.toList());
     }
 
+    public List<LessonWithAttendanceResponse> getUpcomingForTeacher(UUID teacherId, int limit) {
+        List<Lesson> lessons = lessonRepository.findUpcomingByTeacherId(
+                teacherId,
+                LocalDateTime.now(),
+                LessonStatus.SCHEDULED,
+                limit
+        );
+
+        return lessons.stream().map(lesson -> {
+            List<Attendance> attendances = attendanceRepository.findByLessonIdWithChild(lesson.getId());
+            return toLessonWithAttendance(lesson, attendances);
+        }).collect(Collectors.toList());
+    }
+
     @Transactional
     public void markAttendance(UUID lessonId, AttendanceRequest request) {
         Attendance attendance = attendanceRepository.findByLessonIdAndChildId(lessonId, request.getChildId())
